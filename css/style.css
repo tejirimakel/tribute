@@ -53,6 +53,7 @@ h1, h2, h3, h4 {
 
 p { margin: 0 0 1rem; }
 img { max-width: 100%; height: auto; display: block; }
+svg { display: block; }
 figure { margin: 0; }
 ul, ol { margin: 0; padding: 0; list-style: none; }
 
