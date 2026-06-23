@@ -1,131 +1,91 @@
-// var navigation
-var navicon = $('#nav-icon');
-var menublock = $('#menu-block');
-var dropdwown = $('.dropdown-container');
-var blockmain = $('.block-main');
-var closeblock = $('.block-main, .close-menu-block');
-var navdefault = $( '.navbar-default, .navbar-default-white' );
-var initmenu = $('.init-menu');
-var Slink = $('.scroll-link');
-var menumobile = $('#main-menu');
+/* Navigation (vanilla, no jQuery).
+   Sticky/condensing header, mobile menu overlay, smooth in-page scroll,
+   scroll-spy active link, and the back-to-top button. */
+(function () {
+  'use strict';
 
+  function init() {
+    var header   = document.getElementById('site-header');
+    var nav      = document.getElementById('primary-nav');
+    var toggle   = document.getElementById('nav-toggle');
+    var toTop     = document.getElementById('totop');
+    var links    = Array.prototype.slice.call(document.querySelectorAll('.scroll-link'));
+    var navLinks = Array.prototype.slice.call(document.querySelectorAll('.nav-link'));
 
-// section navigation
-var sections = $('section')
-  , nav = $('nav')
-  , nav_height = nav.outerHeight();
+    var reduceMotion = window.matchMedia &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-$(window).on('scroll', function () {
-  var cur_pos = $(this).scrollTop();
-  
-  sections.each(function() {
-    var top = $(this).offset().top - nav_height-10,
-        bottom = top + $(this).outerHeight();
-    
-    if (cur_pos >= top && cur_pos <= bottom) {
-      nav.find('a').removeClass('actived');
-      sections.removeClass('actived');
-      
-      $(this).addClass('actived');
-      nav.find('a[href="#'+$(this).attr('id')+'"]').addClass('actived');
+    // ---- mobile menu ------------------------------------------------------
+    function setMenu(open) {
+      if (!nav) return;
+      nav.classList.toggle('is-open', open);
+      if (toggle) {
+        toggle.setAttribute('aria-expanded', String(open));
+        toggle.setAttribute('aria-label', open ? 'Close menu' : 'Open menu');
+      }
+      document.body.style.overflow = open ? 'hidden' : '';
     }
-  });
-});
+    function isOpen() { return nav && nav.classList.contains('is-open'); }
 
-nav.find('a').on('click', function () {
-  var $el = $(this)
-    , id = $el.attr('href');
-  menumobile.removeClass('menu-show');
-  navdefault.removeClass('fullHeight');
-  
-  $('html, body').animate({
-    scrollTop: $(id).offset().top - nav_height
-  }, 900);
-  
-  return false;
-});
-
-
-    // full block menu
-  navicon.on("click", function(e) {
-    menublock.toggle('slide', {
-            direction: 'right'
-        }, 600);
-    blockmain.fadeToggle(300);
-    initmenu.each(function(i){
-        var t = $(this);
-        setTimeout(function(){ 
-    t.toggleClass('show-menu'); 
-    }, (i+1) * 150);
-      });
-       });
-  
-  // block-main close block menu
-  closeblock.on("click", function(e) {
-    blockmain.fadeToggle(300);
-  menublock.toggle('slide', {
-            direction: 'right'
-        }, 600);
-    initmenu.each(function(i){
-        var t = $(this);
-        setTimeout(function(){ 
-    t.toggleClass('show-menu'); 
-    }, (i+1) * 150);
-      });
-   });
-  
-  //dropdown
-   $('.dropdown').each(function() {
-     var $dropdown = $(this);
-     $("a.dropdown-link", $dropdown).on('click', function(e) {
-      e.preventDefault();
-      var $div = $(".dropdown-container", $dropdown);
-      $div.slideToggle('fast');
-      dropdwown.not($div).slideUp('fast');
-      return false;
+    if (toggle) toggle.addEventListener('click', function () { setMenu(!isOpen()); });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && isOpen()) { setMenu(false); toggle && toggle.focus(); }
     });
-   });
-    
-  $('html').on("click", function(e) {
-    dropdwown.slideUp('fast');
-  });
 
+    // ---- smooth in-page scrolling ----------------------------------------
+    function headerOffset() { return header ? header.offsetHeight : 0; }
 
-  // click scroll navigation block menu
-  Slink.on('click', function(e) {
-    blockmain.fadeOut(300);
-  menublock.hide('slide',{direction:'right'},600);
-  initmenu.each(function(i){
-        var t = $(this);
-        setTimeout(function(){ 
-    t.removeClass('show-menu'); 
-    }, (i+1) * 150);
-      });              
-    var id = $(this).attr('href');
-    var $id = $(id);
-    if ($id.length === 0) {
-        return;
+    links.forEach(function (link) {
+      link.addEventListener('click', function (e) {
+        var href = link.getAttribute('href') || '';
+        if (href.charAt(0) !== '#' || href === '#') return;
+        var target = document.querySelector(href);
+        if (!target) return;
+        e.preventDefault();
+        setMenu(false);
+        var top = target.getBoundingClientRect().top + window.pageYOffset - headerOffset() + 1;
+        window.scrollTo({ top: top, behavior: reduceMotion ? 'auto' : 'smooth' });
+      });
+    });
+
+    // ---- condensing header + back-to-top ---------------------------------
+    function onScroll() {
+      var y = window.pageYOffset || document.documentElement.scrollTop;
+      if (header) header.classList.toggle('scrolled', y > 40);
+      if (toTop)  toTop.classList.toggle('is-visible', y >= 400);
     }
-    e.preventDefault();
-  var offSet = 0;
-  var targetOffset = $(id).offset().top - offSet;
-    bodyScroll.animate({ scrollTop: targetOffset }, 800);
-    }); 
+    window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
 
-// set height background   
-$(function() {
-    function i() {
-        windowHeight = $win.innerHeight(), 
-    $(".mainbg").css("min-height", windowHeight),
-    $(".mainbg-1").css("min-height", windowHeight),
-    $(".imgbg").css("min-height", windowHeight)
+    if (toTop) toTop.addEventListener('click', function () {
+      window.scrollTo({ top: 0, behavior: reduceMotion ? 'auto' : 'smooth' });
+    });
+
+    // ---- scroll-spy -------------------------------------------------------
+    var sections = Array.prototype.slice.call(
+      document.querySelectorAll('main section[id]')
+    );
+    if ('IntersectionObserver' in window && sections.length) {
+      var spy = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+          if (!entry.isIntersecting) return;
+          var id = entry.target.getAttribute('id');
+          navLinks.forEach(function (link) {
+            link.classList.toggle('actived', link.getAttribute('href') === '#' + id);
+          });
+        });
+      }, { rootMargin: '-50% 0px -50% 0px', threshold: 0 });
+      sections.forEach(function (s) { spy.observe(s); });
     }
-    i(), $win.resize(function() {
-        i()
-    })
-});
 
+    // ---- dynamic copyright year ------------------------------------------
+    var year = document.getElementById('year');
+    if (year) year.textContent = new Date().getFullYear();
+  }
 
-
- 
- 
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+})();

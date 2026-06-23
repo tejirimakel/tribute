@@ -1,33 +1,30 @@
-// HTML document is loaded
-$(window).on("load", function(){     
- "use strict";
+/* Page bootstrap (vanilla, no jQuery).
+   Hides the preloader once the page (or a fallback timeout) is ready and
+   initialises the GLightbox photo gallery. */
+(function () {
+  'use strict';
 
-  // var preloader
-  var loader = $('.preloader');
-  var bgpreloader = $('.bg-preloader');
+  function hidePreloader() {
+    var loader = document.querySelector('.preloader');
+    if (!loader || loader.classList.contains('is-hidden')) return;
+    loader.classList.add('is-hidden');
+    window.setTimeout(function () { loader.style.display = 'none'; }, 700);
+  }
 
-  loader.fadeOut('slow', function() { 
- "use strict";
+  // Hide on load, but guarantee removal even if an asset never finishes
+  // loading (slow/broken network) so the page can never stay covered.
+  window.addEventListener('load', hidePreloader);
+  window.setTimeout(hidePreloader, 5000);
 
- bgpreloader.fadeOut(1500);
+  function initGallery() {
+    if (typeof window.GLightbox === 'function') {
+      window.GLightbox({ selector: '.glightbox', loop: true });
+    }
+  }
 
- // animated transition & scroll onStep
- onStep();
- 
- // stick navbar
- navdefault.sticky(); 
- 
- // auto height
- $('.box').matchHeight();
-
- // mobile icon
-    $(".navbar-toggle").on("click", function() {
-      menumobile.toggleClass('menu-show');
-      navdefault.toggleClass('fullHeight');
-    });
-  
-});
-// end function
-});
-// HTML document is loaded end
-
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initGallery);
+  } else {
+    initGallery();
+  }
+})();
